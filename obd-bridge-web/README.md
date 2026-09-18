@@ -72,6 +72,14 @@ Run the container and protocol integration tests from the repository root with `
 - Reboot and OTA require the dashboard password to be entered again.
 - Only recent status and diagnostic events are held in memory. Raw OBD payloads are not logged or persisted.
 
+### Volt data views
+
+The dashboard includes editable Charging, Driving, and Parked views. Add or remove cards, and create custom views scoped to one state or all states. View layouts and the full-charge range baseline are saved in that browser's local storage.
+
+Press **Start live data** while holding OBD control to poll the selected Volt PIDs. Polling pauses manual OBD commands and restores the standard ECU header when stopped. Charging is detected from charger input current; driving is detected from vehicle speed or HV battery current. The remaining EV miles card is an estimate calculated from SOC and the configured full-charge range, which defaults to the 2017 Volt's EPA-rated 53 miles. The actual range changes with driving, temperature, battery condition, and HVAC use.
+
+The available PID definitions and conversions come from the repository's `Volt PIDs.xlsx` workbook. The dashboard decodes responses from those requests; unsupported or unavailable PIDs remain blank.
+
 ## Device connection and remote Wi-Fi
 
 The ESP32 makes the TLS WebSocket connection outbound to `wss://car.gary.systems/ws/device`, so home, work, and hotspot networks need no inbound firewall rule. The server checks `Authorization: Bearer ...`, `X-Device-Id`, and protocol version 1. A new valid socket replaces an older connection for that device ID.
