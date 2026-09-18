@@ -1,24 +1,42 @@
 # OBD Wi-Fi Bridge
 
-This firmware turns an original Bluetooth Classic-capable ESP32 into a transparent TCP-to-Bluetooth-SPP bridge for an OBDLink MX+. It never parses ELM, STN, OBD-II, CAN, prompts, line endings, or payload bytes.
+This project connects an OBDLink MX+ through an original Bluetooth Classic-capable ESP32 to a private remote dashboard. The ESP32 keeps an outbound TLS WebSocket to the container, so it remains reachable while the car moves between known Wi-Fi networks. OBD bytes remain transparent; the bridge does not parse ELM, STN, OBD-II, CAN, prompts, line endings, or payload bytes.
 
 ## Architecture
 
 ```text
-Application
-    |
-Raw TCP :35000
-    |
-Original ESP32
-    |
-Bluetooth Classic SPP
-    |
-OBDLink MX+
-    |
-Vehicle
+Browser -- HTTPS / WebSocket --> ASP.NET Core container -- authenticated WSS --> ESP32
+                                                                         |
+                                                               Bluetooth Classic SPP
+                                                                         |
+                                                                   OBDLink MX+
+                                                                         |
+                                                                      Vehicle
+
+Local diagnostic client -- TCP :35000 --> ESP32 (only while cloud control is idle)
 ```
 
-Only one raw TCP client is accepted at a time. A small independent HTTP server exposes status at `GET /api/status`; it does not expose OBD commands.
+Only one command owner is accepted at a time. The container keeps the device connection open; a browser may own commands while other logged-in browsers observe. The local TCP bridge remains available when there is no cloud owner. Neither local TCP port 35000 nor the ESP32 HTTP endpoints should be exposed directly to the Internet.
+
+## Remote dashboard and Docker service
+
+The C# ASP.NET Core service, device protocol, and dashboard live in [`obd-bridge-web`](obd-bridge-web/README.md). The Docker build context is the repository root and the Dockerfile is `obd-bridge-web/Dockerfile`. In Dockhand, set the container port to `8080`, mount a persistent volume at `/data`, configure the required secrets from the service README, and let Git sync rebuild the image.
+
+Put `car.garyjs.com` behind the HTTPS reverse proxy. Enable WebSocket upgrades and permit request bodies up to 2 MiB for firmware uploads. Configure long-lived WebSocket idle timeouts. The web app still performs its own password and device-token checks.
+
+The ESP32 makes only outbound `wss://car.garyjs.com/ws/device` connections. Its device token is separate from the dashboard password. The TLS root certificate must be configured in ignored `include/secrets.h` as `CLOUD_CA_CERT`; certificate validation is required and there is no insecure mode.
+
+### ESP32 setup for remote access
+
+1. Copy `include/secrets.example.h` to ignored `include/secrets.h`.
+2. Set the Wi-Fi profiles, device ID, device token, and CA certificate. The token must match Dockhand's `DEVICE_TOKEN`; the device ID must match `DEVICE_ID`.
+3. Set `CLOUD_WS_URL` to the public WebSocket path if it differs from `wss://car.garyjs.com/ws/device`.
+4. Build with `pio run`.
+5. Flash the new partition map over USB once, then reboot and check the serial log for the cloud connection. After this migration, firmware can be uploaded through the dashboard.
+
+The OTA slots were enlarged to 1.875 MiB by reducing the unused SPIFFS partition to 128 KiB. This changes partition offsets, so the current OTA image cannot safely install the new layout by itself. A USB flash is required once to install both the new partition table and firmware. Normal later images are streamed through the container, hash-verified by the ESP32, and written to the inactive slot. A failed or interrupted transfer does not select the new slot.
+
+The complete frame and OTA contract is in [`Protocol.md`](obd-bridge-web/Protocol.md). Deployment and reverse-proxy settings are in [`obd-bridge-web/README.md`](obd-bridge-web/README.md).
 
 ## Hardware and initial configuration
 
@@ -29,7 +47,7 @@ Only one raw TCP client is accepted at a time. A small independent HTTP server e
 - HTTP status: port `80`.
 - USB serial monitor: `115200` baud.
 
-The project uses a custom 4 MiB dual-OTA partition table. Each application slot is `0x1A0000` bytes (1.625 MiB), with separate NVS, OTA metadata, core-dump, and SPIFFS partitions.
+The project uses a custom 4 MiB dual-OTA partition table. Each application slot is `0x1E0000` bytes (1.875 MiB), with separate NVS, OTA metadata, core-dump, and SPIFFS partitions.
 
 Copy `include/secrets.example.h` to `include/secrets.h` and enter the Wi-Fi credentials. The real secrets file is ignored by Git. On boot, values stored in the `obd-bridge` Preferences/NVS namespace override compiled defaults (`wifi_ssid`, `wifi_psk`, `obd_mac`, `tcp_port`, and `hostname`). A configuration UI is intentionally outside V1.
 

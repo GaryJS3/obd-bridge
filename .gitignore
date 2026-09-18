@@ -1,4 +1,6 @@
 .pio/
 .vscode/
 include/secrets.h
-
+**/bin/
+**/obj/
+artifacts/

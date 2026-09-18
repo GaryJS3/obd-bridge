@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include "AppStats.h"
 #include "BluetoothObd.h"
+#include "RemoteObdSink.h"
 
 #ifndef TRACE_BRIDGE_DATA
 #define TRACE_BRIDGE_DATA 0
@@ -51,6 +52,12 @@ public:
     void Begin();
     void Loop();
     bool HasClient();
+    void SetRemoteSink(RemoteObdSink *sink) { RemoteSink = sink; }
+    bool SetRemoteControl(bool enabled);
+    bool RemoteControlActive() const { return RemoteControl; }
+    bool EnqueueRemoteCommand(const uint8_t *data, size_t length);
+    void SetOtaActive(bool active);
+    uint16_t PortNumber() const { return Port; }
     size_t PendingToBluetooth() const { return TcpToBt.Size(); }
     size_t PendingToTcp() const { return BtToTcp.Size(); }
 
@@ -62,6 +69,10 @@ private:
     WiFiClient Client;
     ByteRing<4096> TcpToBt;
     ByteRing<8192> BtToTcp;
+    ByteRing<4096> RemoteToBt;
+    RemoteObdSink *RemoteSink = nullptr;
+    bool RemoteControl = false;
+    bool OtaActive = false;
     uint64_t PendingTcpDropLog = 0;
     uint64_t PendingNoClientDropLog = 0;
     uint32_t LastDropLogMs = 0;

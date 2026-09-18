@@ -46,7 +46,7 @@ void TcpBridge::AcceptClient()
     {
         return;
     }
-    if (Client && Client.connected())
+    if ((Client && Client.connected()) || RemoteControl || OtaActive)
     {
         Serial.printf("[TCP] Rejected second client: %s\n", incoming.remoteIP().toString().c_str());
         incoming.stop();
@@ -60,7 +60,7 @@ void TcpBridge::AcceptClient()
 
 void TcpBridge::ReadTcp()
 {
-    if (!Client || !Client.connected())
+    if (RemoteControl || OtaActive || !Client || !Client.connected())
     {
         return;
     }
@@ -104,6 +104,21 @@ void TcpBridge::ReadBluetooth()
 #if TRACE_BRIDGE_DATA
     Serial.printf("[TRACE] BT -> TCP: %u bytes\n", static_cast<unsigned>(read));
 #endif
+    if (OtaActive)
+    {
+        Stats.AddBtToTcpDropped(read);
+        PendingNoClientDropLog += read;
+        return;
+    }
+    if (RemoteControl)
+    {
+        if (!RemoteSink || !RemoteSink->QueueObdOutput(buffer, read))
+        {
+            Stats.AddBtToTcpDropped(read);
+            PendingNoClientDropLog += read;
+        }
+        return;
+    }
     if (!Client || !Client.connected())
     {
         Stats.AddBtToTcpDropped(read);
@@ -121,14 +136,15 @@ void TcpBridge::ReadBluetooth()
 
 void TcpBridge::FlushBluetooth()
 {
-    if (!Bluetooth.IsConnected() || TcpToBt.Size() == 0)
+    if (OtaActive || !Bluetooth.IsConnected() || (RemoteControl ? RemoteToBt.Size() == 0 : TcpToBt.Size() == 0))
     {
         return;
     }
     size_t contiguous = 0;
-    const uint8_t *data = TcpToBt.Peek(contiguous);
+    const uint8_t *data = RemoteControl ? RemoteToBt.Peek(contiguous) : TcpToBt.Peek(contiguous);
     const size_t written = Bluetooth.Write(data, min(contiguous, ChunkSize));
-    TcpToBt.Consume(written);
+    if (RemoteControl) RemoteToBt.Consume(written);
+    else TcpToBt.Consume(written);
     Stats.AddTcpToBt(written);
 }
 
@@ -177,4 +193,50 @@ void TcpBridge::LogDrops()
 bool TcpBridge::HasClient()
 {
     return Client && Client.connected();
+}
+
+bool TcpBridge::SetRemoteControl(bool enabled)
+{
+    if (enabled && (HasClient() || OtaActive))
+    {
+        return false;
+    }
+    if (RemoteControl == enabled)
+    {
+        return true;
+    }
+    RemoteControl = enabled;
+    TcpToBt.Clear();
+    BtToTcp.Clear();
+    RemoteToBt.Clear();
+    Serial.printf("[TCP] OBD command owner: %s\n", enabled ? "cloud" : "local TCP / none");
+    return true;
+}
+
+bool TcpBridge::EnqueueRemoteCommand(const uint8_t *data, size_t length)
+{
+    if (!RemoteControl || OtaActive || length == 0)
+    {
+        return false;
+    }
+    const size_t accepted = RemoteToBt.Push(data, length);
+    if (accepted < length)
+    {
+        const size_t dropped = length - accepted;
+        Stats.AddTcpToBtDropped(dropped);
+        PendingTcpDropLog += dropped;
+        return false;
+    }
+    return true;
+}
+
+void TcpBridge::SetOtaActive(bool active)
+{
+    OtaActive = active;
+    if (active)
+    {
+        TcpToBt.Clear();
+        BtToTcp.Clear();
+        RemoteToBt.Clear();
+    }
 }

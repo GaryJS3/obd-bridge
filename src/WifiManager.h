@@ -18,7 +18,7 @@ private:
     AppStats &Stats;
     wl_status_t LastStatus = WL_NO_SHIELD;
     uint32_t LastAttemptMs = 0;
+    size_t NextProfile = 0;
     bool HasAttempted = false;
     void Connect();
 };
-

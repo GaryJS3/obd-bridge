@@ -154,7 +154,8 @@ void StatusServer::SendStatus()
     json += ",\"bluetooth\":{\"connected\":" + String(Bluetooth.IsConnected() ? "true" : "false");
     json += ",\"target_name\":\"OBDLink MX+ 80685\",\"target_mac\":\"" + String(mac) + "\"}";
     json += ",\"tcp\":{\"port\":" + String(Config.TcpPort) + ",\"client_connected\":" + String(Bridge.HasClient() ? "true" : "false") + "}";
-    json += ",\"diagnostics\":{\"build\":\"return-path-fix-1\",\"running_slot\":\"" + String(esp_ota_get_running_partition()->label) + "\",\"pending_to_bt\":" + String(Bridge.PendingToBluetooth()) + ",\"pending_to_tcp\":" + String(Bridge.PendingToTcp()) + "}";
+    const String buildId = String(__DATE__) + " " + __TIME__;
+    json += ",\"diagnostics\":{\"build\":\"" + JsonEscape(buildId) + "\",\"running_slot\":\"" + String(esp_ota_get_running_partition()->label) + "\",\"pending_to_bt\":" + String(Bridge.PendingToBluetooth()) + ",\"pending_to_tcp\":" + String(Bridge.PendingToTcp()) + "}";
     json += ",\"stats\":{";
     json += "\"tcp_to_bt_bytes\":" + String(stats.TcpToBtBytes);
     json += ",\"bt_to_tcp_bytes\":" + String(stats.BtToTcpBytes);

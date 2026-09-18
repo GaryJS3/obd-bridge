@@ -1,0 +1,7 @@
+**/bin
+**/obj
+.git
+.pio
+include/secrets.h
+obd-bridge-ui
+*.xlsx
