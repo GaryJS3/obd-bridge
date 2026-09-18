@@ -7,9 +7,9 @@
 #define WIFI_2_PSK "your-work-wifi-password"
 #define WIFI_3_SSID "your-hotspot-ssid"
 #define WIFI_3_PSK "your-hotspot-password"
-#define CLOUD_WS_URL "wss://car.garyjs.com/ws/device"
+#define CLOUD_WS_URL "wss://car.gary.systems/ws/device"
 #define CLOUD_DEVICE_ID "obd-bridge-01"
 #define CLOUD_DEVICE_TOKEN "replace-with-a-long-random-device-token"
-// Paste the PEM root CA that signs the HTTPS certificate for car.garyjs.com.
+// Paste the PEM root CA that signs the HTTPS certificate for car.gary.systems.
 // Never disable certificate validation. Keep this value with the other local secrets.
 #define CLOUD_CA_CERT ""

@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_HTTP_PORTS: "8080"
-      PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:-https://car.garyjs.com}"
+      PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:-https://car.gary.systems}"
       WEB_PASSWORD: "${WEB_PASSWORD:?Set WEB_PASSWORD in the Dockhand stack environment}"
       DEVICE_TOKEN: "${DEVICE_TOKEN:?Set DEVICE_TOKEN in the Dockhand stack environment}"
       DEVICE_ID: "${DEVICE_ID:-obd-bridge-01}"

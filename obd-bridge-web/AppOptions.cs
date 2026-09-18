@@ -17,13 +17,13 @@ public sealed class AppOptions
     {
         var password = configuration["WEB_PASSWORD"];
         var token = configuration["DEVICE_TOKEN"];
-        var origin = configuration["PUBLIC_ORIGIN"] ?? "https://car.garyjs.com";
+        var origin = configuration["PUBLIC_ORIGIN"] ?? "https://car.gary.systems";
         if (string.IsNullOrWhiteSpace(password) || password.Length < 12)
             throw new InvalidOperationException("WEB_PASSWORD must be configured with at least 12 characters.");
         if (string.IsNullOrWhiteSpace(token) || token.Length < 32)
             throw new InvalidOperationException("DEVICE_TOKEN must be configured with at least 32 characters.");
         if (!Uri.TryCreate(origin, UriKind.Absolute, out var originUri) || originUri.Scheme != Uri.UriSchemeHttps || originUri.AbsolutePath != "/")
-            throw new InvalidOperationException("PUBLIC_ORIGIN must be an HTTPS origin, for example https://car.garyjs.com.");
+            throw new InvalidOperationException("PUBLIC_ORIGIN must be an HTTPS origin, for example https://car.gary.systems.");
 
         var maxBytes = long.TryParse(configuration["OTA_MAX_BYTES"], out var parsed) ? parsed : 1_800_000;
         if (maxBytes is < 1 or > 1_800_000)

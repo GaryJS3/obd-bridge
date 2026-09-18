@@ -23,7 +23,7 @@ public sealed class BridgeIntegrationTests : IClassFixture<WebApplicationFactory
         Environment.SetEnvironmentVariable("WEB_PASSWORD", Password);
         Environment.SetEnvironmentVariable("DEVICE_TOKEN", DeviceToken);
         Environment.SetEnvironmentVariable("DEVICE_ID", "test-car");
-        Environment.SetEnvironmentVariable("PUBLIC_ORIGIN", "https://car.garyjs.com");
+        Environment.SetEnvironmentVariable("PUBLIC_ORIGIN", "https://car.gary.systems");
         _factory = factory.WithWebHostBuilder(builder => builder.UseEnvironment("Testing"));
     }
 
@@ -54,6 +54,23 @@ public sealed class BridgeIntegrationTests : IClassFixture<WebApplicationFactory
         using var badOrigin = AuthenticatedRequest(HttpMethod.Post, "/api/control/acquire", loggedIn.Cookie, "https://attacker.example");
         var rejectedOrigin = await anonymous.SendAsync(badOrigin);
         Assert.Equal(HttpStatusCode.Forbidden, rejectedOrigin.StatusCode);
+    }
+
+    [Fact]
+    public async Task AnonymousLoginRedirectStaysRelativeBehindTlsTerminatingProxy()
+    {
+        using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("http://car.gary.systems"),
+            AllowAutoRedirect = false,
+            HandleCookies = false
+        });
+
+        using var response = await client.GetAsync("/");
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.NotNull(response.Headers.Location);
+        Assert.False(response.Headers.Location!.IsAbsoluteUri);
+        Assert.StartsWith("/login", response.Headers.Location.OriginalString);
     }
 
     [Fact]
@@ -140,7 +157,7 @@ public sealed class BridgeIntegrationTests : IClassFixture<WebApplicationFactory
         };
         upload.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
         upload.Headers.TryAddWithoutValidation("Cookie", login.Cookie);
-        upload.Headers.TryAddWithoutValidation("Origin", "https://car.garyjs.com");
+        upload.Headers.TryAddWithoutValidation("Origin", "https://car.gary.systems");
         upload.Headers.TryAddWithoutValidation("X-Password-Confirm", Password);
         using var response = await http.SendAsync(upload);
         await deviceUpdate;
@@ -153,7 +170,7 @@ public sealed class BridgeIntegrationTests : IClassFixture<WebApplicationFactory
 
     private HttpClient CreateHttpClient() => _factory.CreateClient(new WebApplicationFactoryClientOptions
     {
-        BaseAddress = new Uri("https://car.garyjs.com"),
+        BaseAddress = new Uri("https://car.gary.systems"),
         AllowAutoRedirect = false,
         HandleCookies = false
     });
@@ -164,7 +181,7 @@ public sealed class BridgeIntegrationTests : IClassFixture<WebApplicationFactory
         {
             Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["password"] = password })
         };
-        request.Headers.TryAddWithoutValidation("Origin", "https://car.garyjs.com");
+        request.Headers.TryAddWithoutValidation("Origin", "https://car.gary.systems");
         var response = await client.SendAsync(request);
         if (!response.Headers.TryGetValues("Set-Cookie", out var values)) return (response, "", "");
         var cookieHeader = values.Single();
@@ -188,13 +205,13 @@ public sealed class BridgeIntegrationTests : IClassFixture<WebApplicationFactory
         var client = _factory.Server.CreateWebSocketClient();
         client.ConfigureRequest = request =>
         {
-            request.Headers["Origin"] = "https://car.garyjs.com";
+            request.Headers["Origin"] = "https://car.gary.systems";
             request.Headers["Cookie"] = cookie;
         };
         return client.ConnectAsync(new Uri("ws://localhost/ws/browser"), CancellationToken.None);
     }
 
-    private static HttpRequestMessage AuthenticatedRequest(HttpMethod method, string path, string cookie, string origin = "https://car.garyjs.com")
+    private static HttpRequestMessage AuthenticatedRequest(HttpMethod method, string path, string cookie, string origin = "https://car.gary.systems")
     {
         var request = new HttpRequestMessage(method, path);
         request.Headers.TryAddWithoutValidation("Cookie", cookie);

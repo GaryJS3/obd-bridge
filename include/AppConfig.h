@@ -10,7 +10,7 @@
 #define WIFI_SSID "your-wifi-ssid"
 #define WIFI_PSK "your-wifi-password"
 #define OTA_UPDATE_PASSWORD "replace-with-a-long-random-password"
-#define CLOUD_WS_URL "wss://car.garyjs.com/ws/device"
+#define CLOUD_WS_URL "wss://car.gary.systems/ws/device"
 #define CLOUD_DEVICE_ID "obd-bridge-01"
 #define CLOUD_DEVICE_TOKEN "replace-with-a-long-random-device-token"
 #define CLOUD_CA_CERT ""
@@ -33,7 +33,7 @@
 #define WIFI_3_PSK ""
 #endif
 #ifndef CLOUD_WS_URL
-#define CLOUD_WS_URL "wss://car.garyjs.com/ws/device"
+#define CLOUD_WS_URL "wss://car.gary.systems/ws/device"
 #endif
 #ifndef CLOUD_DEVICE_ID
 #define CLOUD_DEVICE_ID "obd-bridge-01"

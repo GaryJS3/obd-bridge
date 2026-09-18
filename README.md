@@ -22,15 +22,15 @@ Only one command owner is accepted at a time. The container keeps the device con
 
 The C# ASP.NET Core service, device protocol, and dashboard live in [`obd-bridge-web`](obd-bridge-web/README.md). The root `compose.yaml` builds `obd-bridge-web/Dockerfile`, persists cookie keys in a named `/data` volume, and binds HTTP to `127.0.0.1:8080` by default. In Dockhand, create a Git Compose stack from the repository root and configure `WEB_PASSWORD` and `DEVICE_TOKEN` as stack environment secrets. See the service README for reverse-proxy binding details.
 
-Put `car.garyjs.com` behind the HTTPS reverse proxy. Enable WebSocket upgrades and permit request bodies up to 2 MiB for firmware uploads. Configure long-lived WebSocket idle timeouts. The web app still performs its own password and device-token checks.
+Put `car.gary.systems` behind the HTTPS reverse proxy. Enable WebSocket upgrades and permit request bodies up to 2 MiB for firmware uploads. Configure long-lived WebSocket idle timeouts. The web app still performs its own password and device-token checks.
 
-The ESP32 makes only outbound `wss://car.garyjs.com/ws/device` connections. Its device token is separate from the dashboard password. The TLS root certificate must be configured in ignored `include/secrets.h` as `CLOUD_CA_CERT`; certificate validation is required and there is no insecure mode.
+The ESP32 makes only outbound `wss://car.gary.systems/ws/device` connections. Its device token is separate from the dashboard password. The TLS root certificate must be configured in ignored `include/secrets.h` as `CLOUD_CA_CERT`; certificate validation is required and there is no insecure mode.
 
 ### ESP32 setup for remote access
 
 1. Copy `include/secrets.example.h` to ignored `include/secrets.h`.
 2. Set the Wi-Fi profiles, device ID, device token, and CA certificate. The token must match Dockhand's `DEVICE_TOKEN`; the device ID must match `DEVICE_ID`.
-3. Set `CLOUD_WS_URL` to the public WebSocket path if it differs from `wss://car.garyjs.com/ws/device`.
+3. Set `CLOUD_WS_URL` to the public WebSocket path if it differs from `wss://car.gary.systems/ws/device`.
 4. Build with `pio run`.
 5. Flash the new partition map over USB once, then reboot and check the serial log for the cloud connection. After this migration, firmware can be uploaded through the dashboard.
 

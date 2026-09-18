@@ -1,6 +1,6 @@
 # Remote bridge protocol, version 1
 
-The ESP32 initiates a TLS WebSocket to `wss://car.garyjs.com/ws/device`. The reverse proxy terminates TLS and forwards WebSocket traffic to the ASP.NET Core container. The device sends `Authorization: Bearer <DEVICE_TOKEN>`, `X-Device-Id: obd-bridge-01`, and `X-Protocol-Version: 1` during the WebSocket handshake.
+The ESP32 initiates a TLS WebSocket to `wss://car.gary.systems/ws/device`. The reverse proxy terminates TLS and forwards WebSocket traffic to the ASP.NET Core container. The device sends `Authorization: Bearer <DEVICE_TOKEN>`, `X-Device-Id: obd-bridge-01`, and `X-Protocol-Version: 1` during the WebSocket handshake.
 
 The server accepts one current connection for the configured device ID. A newly authenticated connection replaces the old socket. WebSocket messages are bounded; text control messages may not exceed 64 KiB. The ESP32 sends a heartbeat/status message every 10 seconds. An OBD command is never replayed after reconnect.
 

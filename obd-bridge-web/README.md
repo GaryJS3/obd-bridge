@@ -12,7 +12,7 @@ Set these environment variables as Dockhand secrets or configuration:
 |---|---|---|
 | `WEB_PASSWORD` | Yes | At least 12 characters. Used only by the website. |
 | `DEVICE_TOKEN` | Yes | At least 32 characters. Must match the firmware token. |
-| `PUBLIC_ORIGIN` | Yes for public deployment | `https://car.garyjs.com`; HTTPS origin only, no path. |
+| `PUBLIC_ORIGIN` | Yes for public deployment | `https://car.gary.systems`; HTTPS origin only, no path. |
 | `DEVICE_ID` | No | `obd-bridge-01`; must match firmware. |
 | `OTA_MAX_BYTES` | No | `1800000`; maximum accepted firmware body, hard cap `1800000`. |
 | `AUTH_COOKIE_DAYS` | No | `30`; clamped to 1–90. |
@@ -36,7 +36,7 @@ Terminate TLS at the reverse proxy and forward HTTP to container port `8080`. Co
 - disable caching for `/api/*` and `/ws/*`;
 - preserve the browser's `Origin` header.
 
-The public origin must be exactly `https://car.garyjs.com` (or your actual HTTPS hostname). The app compares browser mutation and WebSocket origins against it. The app always marks its authentication cookie `Secure`, even though TLS ends at the proxy.
+The public origin must be exactly `https://car.gary.systems` (or your actual HTTPS hostname). The app compares browser mutation and WebSocket origins against it. The app always marks its authentication cookie `Secure`, even though TLS ends at the proxy. Login redirects are path-relative so the browser stays on HTTPS when the proxy forwards plain HTTP to the container.
 
 The proxy must route `/login`, `/`, `/api/*`, and both WebSocket paths to this container. Do not add an additional proxy login layer that blocks the ESP32 device path; the container authenticates devices with its own bearer token. No public raw TCP port is needed.
 
@@ -49,7 +49,7 @@ Install the .NET 10 SDK. From the repository root:
 ```powershell
 $env:WEB_PASSWORD = Read-Host "Dashboard password"
 $env:DEVICE_TOKEN = Read-Host "Device token"
-$env:PUBLIC_ORIGIN = "https://car.garyjs.com"
+$env:PUBLIC_ORIGIN = "https://car.gary.systems"
 $env:ASPNETCORE_HTTP_PORTS = "8080"
 dotnet run --project .\obd-bridge-web\ObdBridge.Web.csproj
 ```
@@ -68,7 +68,7 @@ Run the container and protocol integration tests from the repository root with `
 
 ## Device connection and remote Wi-Fi
 
-The ESP32 makes the TLS WebSocket connection outbound to `wss://car.garyjs.com/ws/device`, so home, work, and hotspot networks need no inbound firewall rule. The server checks `Authorization: Bearer ...`, `X-Device-Id`, and protocol version 1. A new valid socket replaces an older connection for that device ID.
+The ESP32 makes the TLS WebSocket connection outbound to `wss://car.gary.systems/ws/device`, so home, work, and hotspot networks need no inbound firewall rule. The server checks `Authorization: Bearer ...`, `X-Device-Id`, and protocol version 1. A new valid socket replaces an older connection for that device ID.
 
 In `include/secrets.h`, set the same device token and ID, the WebSocket URL, a PEM CA certificate for the reverse proxy's server certificate, and up to three Wi-Fi SSID/password pairs. Express PEM line breaks as `\n` inside the C string literal. Keep `include/secrets.h` untracked. The firmware waits for the system clock before TLS certificate validation and rotates through configured networks after a disconnect. Certificate verification is mandatory.
 

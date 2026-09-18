@@ -48,7 +48,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return Task.CompletedTask;
         }
-        context.Response.Redirect(context.RedirectUri);
+        // A TLS-terminating reverse proxy may forward HTTP to this process.
+        // Keep the browser on the public HTTPS origin instead of redirecting to the upstream scheme.
+        context.Response.Redirect(new Uri(context.RedirectUri).PathAndQuery);
         return Task.CompletedTask;
     };
     cookie.Events.OnValidatePrincipal = async context =>
