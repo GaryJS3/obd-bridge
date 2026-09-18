@@ -42,6 +42,8 @@ Terminate TLS at the reverse proxy and forward HTTP to container port `8080`. Co
 
 The public origin must be exactly `https://car.gary.systems` (or your actual HTTPS hostname). The app compares browser mutation and WebSocket origins against it. The app always marks its authentication cookie `Secure`, even though TLS ends at the proxy. Login redirects are path-relative so the browser stays on HTTPS when the proxy forwards plain HTTP to the container.
 
+The password login POST is the sole mutation exempt from the origin comparison because some privacy or proxy paths send `Origin: null`. It remains protected by the website password, fixed-time comparison, and per-address rate limiting. All authenticated mutations and the browser WebSocket still require the exact configured public origin.
+
 The proxy must route `/login`, `/`, `/api/*`, and both WebSocket paths to this container. Do not add an additional proxy login layer that blocks the ESP32 device path; the container authenticates devices with its own bearer token. No public raw TCP port is needed.
 
 The Compose file binds host port `8080` to loopback (`127.0.0.1`) by default, suitable when the reverse proxy runs directly on the Dockhand host. Set `OBD_BRIDGE_BIND` to the Dockhand host's private interface address if the proxy reaches it over the host network, and restrict that port to the proxy with the host firewall. If the proxy is another container, connect both services to the same existing Docker network and route to `obd-bridge:8080`; do not expose port `8080` publicly.

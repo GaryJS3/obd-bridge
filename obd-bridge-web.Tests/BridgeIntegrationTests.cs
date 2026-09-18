@@ -48,6 +48,15 @@ public sealed class BridgeIntegrationTests : IClassFixture<WebApplicationFactory
         Assert.Contains("Secure", loggedIn.CookieHeader, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("HttpOnly", loggedIn.CookieHeader, StringComparison.OrdinalIgnoreCase);
 
+        using var nullOriginLogin = new HttpRequestMessage(HttpMethod.Post, "/login")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["password"] = Password })
+        };
+        nullOriginLogin.Headers.TryAddWithoutValidation("Origin", "null");
+        using var nullOriginResponse = await anonymous.SendAsync(nullOriginLogin);
+        Assert.Equal(HttpStatusCode.Redirect, nullOriginResponse.StatusCode);
+        Assert.Equal("/", nullOriginResponse.Headers.Location?.OriginalString);
+
         using var statusRequest = AuthenticatedRequest(HttpMethod.Get, "/api/status", loggedIn.Cookie);
         var status = await anonymous.SendAsync(statusRequest);
         Assert.Equal(HttpStatusCode.OK, status.StatusCode);

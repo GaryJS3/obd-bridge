@@ -97,7 +97,8 @@ app.Use(async (context, next) =>
 
     var isMutation = HttpMethods.IsPost(context.Request.Method) || HttpMethods.IsPut(context.Request.Method) || HttpMethods.IsPatch(context.Request.Method) || HttpMethods.IsDelete(context.Request.Method);
     var isBrowserSocket = context.Request.Path == "/ws/browser";
-    if ((isMutation || isBrowserSocket) && context.Request.Path != "/ws/device")
+    var isPasswordLogin = context.Request.Path == "/login" && HttpMethods.IsPost(context.Request.Method);
+    if ((isMutation || isBrowserSocket) && context.Request.Path != "/ws/device" && !isPasswordLogin)
     {
         var origin = context.Request.Headers.Origin.ToString();
         if (!string.Equals(origin, settings.PublicOrigin, StringComparison.OrdinalIgnoreCase))
