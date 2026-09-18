@@ -1,0 +1,20 @@
+services:
+  obd-bridge:
+    build:
+      context: .
+      dockerfile: obd-bridge-web/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_HTTP_PORTS: "8080"
+      PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:-https://car.garyjs.com}"
+      WEB_PASSWORD: "${WEB_PASSWORD:?Set WEB_PASSWORD in the Dockhand stack environment}"
+      DEVICE_TOKEN: "${DEVICE_TOKEN:?Set DEVICE_TOKEN in the Dockhand stack environment}"
+      DEVICE_ID: "${DEVICE_ID:-obd-bridge-01}"
+      DATA_PROTECTION_PATH: /data/keys
+    ports:
+      - "${OBD_BRIDGE_BIND:-127.0.0.1}:8080:8080"
+    volumes:
+      - obd-bridge-data:/data
+
+volumes:
+  obd-bridge-data:

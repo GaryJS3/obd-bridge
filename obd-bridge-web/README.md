@@ -4,7 +4,7 @@ This dependency-light ASP.NET Core service serves the private car dashboard, aut
 
 ## Deployment with Dockhand
 
-Use the Git repository root as the Docker build context and `obd-bridge-web/Dockerfile` as the Dockerfile path. The service listens on container port `8080`. Mount persistent storage at `/data` so the login cookie encryption keys survive container replacement.
+Use the Git repository root as the Compose stack directory. The root `compose.yaml` builds `obd-bridge-web/Dockerfile`, exposes container port `8080`, and persists login cookie encryption keys in a named volume mounted at `/data`.
 
 Set these environment variables as Dockhand secrets or configuration:
 
@@ -39,6 +39,8 @@ Terminate TLS at the reverse proxy and forward HTTP to container port `8080`. Co
 The public origin must be exactly `https://car.garyjs.com` (or your actual HTTPS hostname). The app compares browser mutation and WebSocket origins against it. The app always marks its authentication cookie `Secure`, even though TLS ends at the proxy.
 
 The proxy must route `/login`, `/`, `/api/*`, and both WebSocket paths to this container. Do not add an additional proxy login layer that blocks the ESP32 device path; the container authenticates devices with its own bearer token. No public raw TCP port is needed.
+
+The Compose file binds host port `8080` to loopback (`127.0.0.1`) by default, suitable when the reverse proxy runs directly on the Dockhand host. Set `OBD_BRIDGE_BIND` to the Dockhand host's private interface address if the proxy reaches it over the host network, and restrict that port to the proxy with the host firewall. If the proxy is another container, connect both services to the same existing Docker network and route to `obd-bridge:8080`; do not expose port `8080` publicly.
 
 ## Local build and run
 

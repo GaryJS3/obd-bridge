@@ -20,7 +20,7 @@ Only one command owner is accepted at a time. The container keeps the device con
 
 ## Remote dashboard and Docker service
 
-The C# ASP.NET Core service, device protocol, and dashboard live in [`obd-bridge-web`](obd-bridge-web/README.md). The Docker build context is the repository root and the Dockerfile is `obd-bridge-web/Dockerfile`. In Dockhand, set the container port to `8080`, mount a persistent volume at `/data`, configure the required secrets from the service README, and let Git sync rebuild the image.
+The C# ASP.NET Core service, device protocol, and dashboard live in [`obd-bridge-web`](obd-bridge-web/README.md). The root `compose.yaml` builds `obd-bridge-web/Dockerfile`, persists cookie keys in a named `/data` volume, and binds HTTP to `127.0.0.1:8080` by default. In Dockhand, create a Git Compose stack from the repository root and configure `WEB_PASSWORD` and `DEVICE_TOKEN` as stack environment secrets. See the service README for reverse-proxy binding details.
 
 Put `car.garyjs.com` behind the HTTPS reverse proxy. Enable WebSocket upgrades and permit request bodies up to 2 MiB for firmware uploads. Configure long-lived WebSocket idle timeouts. The web app still performs its own password and device-token checks.
 
