@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: obd-bridge-web/Dockerfile
+      args:
+        BUILD_ID: "${BUILD_ID:-}"
     restart: unless-stopped
     environment:
       ASPNETCORE_HTTP_PORTS: "8080"

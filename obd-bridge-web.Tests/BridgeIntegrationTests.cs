@@ -31,6 +31,9 @@ public sealed class BridgeIntegrationTests : IClassFixture<WebApplicationFactory
     public async Task LoginCookieProtectsDashboardAndMutationsCheckOrigin()
     {
         using var anonymous = CreateHttpClient();
+        var loginPage = await anonymous.GetStringAsync("/login");
+        Assert.Contains("Build ", loginPage);
+
         var health = await anonymous.GetAsync("/healthz");
         Assert.Equal(HttpStatusCode.OK, health.StatusCode);
         var privateStatus = await anonymous.GetAsync("/api/status");
@@ -54,6 +57,9 @@ public sealed class BridgeIntegrationTests : IClassFixture<WebApplicationFactory
         using var badOrigin = AuthenticatedRequest(HttpMethod.Post, "/api/control/acquire", loggedIn.Cookie, "https://attacker.example");
         var rejectedOrigin = await anonymous.SendAsync(badOrigin);
         Assert.Equal(HttpStatusCode.Forbidden, rejectedOrigin.StatusCode);
+        using var originError = JsonDocument.Parse(await rejectedOrigin.Content.ReadAsStringAsync());
+        Assert.Equal("https://car.gary.systems", originError.RootElement.GetProperty("expectedOrigin").GetString());
+        Assert.Equal("https://attacker.example", originError.RootElement.GetProperty("receivedOrigin").GetString());
     }
 
     [Fact]

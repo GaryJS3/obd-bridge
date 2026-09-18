@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using System.Reflection;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -21,6 +23,8 @@ if (args.Contains("--healthcheck", StringComparer.Ordinal))
 
 var builder = WebApplication.CreateBuilder(args);
 var settings = AppOptions.Load(builder.Configuration);
+var buildId = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev";
+var safeBuildId = HtmlEncoder.Default.Encode(buildId);
 builder.Services.AddSingleton(settings);
 builder.Services.AddSingleton<BridgeCoordinator>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<BridgeCoordinator>());
@@ -79,7 +83,7 @@ builder.Services.AddRateLimiter(limiter => limiter.AddPolicy("login", context =>
 var app = builder.Build();
 var loginHtml = """
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>Car Console · Sign in</title><style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#111511;color:#e5e3d8;font:16px/1.5 Georgia,serif}.panel{width:min(420px,calc(100vw - 32px));padding:34px;background:#1c211d;border:1px solid #394139;box-shadow:12px 12px 0 #090b09}.mark{color:#d8a449;font:700 11px/1.2 Consolas,monospace;letter-spacing:.18em;text-transform:uppercase}.rule{height:1px;background:#394139;margin:22px 0}h1{font-size:32px;font-weight:400;margin:0 0 8px}.muted{color:#9ca399;font:13px/1.5 Consolas,monospace}label{display:block;margin:24px 0 7px;font:11px Consolas,monospace;letter-spacing:.1em;text-transform:uppercase}input{width:100%;padding:12px;background:#101410;border:1px solid #454e45;color:#fff;font:16px Consolas,monospace}button{width:100%;margin-top:14px;padding:12px;border:0;background:#dda94f;color:#1c1b15;font:700 12px Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}#error{min-height:20px;color:#e88b6a;font:12px Consolas,monospace;margin:12px 0 0}</style></head>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#111511;color:#e5e3d8;font:16px/1.5 Georgia,serif}.panel{width:min(420px,calc(100vw - 32px));padding:34px;background:#1c211d;border:1px solid #394139;box-shadow:12px 12px 0 #090b09}.mark{color:#d8a449;font:700 11px/1.2 Consolas,monospace;letter-spacing:.18em;text-transform:uppercase}.rule{height:1px;background:#394139;margin:22px 0}h1{font-size:32px;font-weight:400;margin:0 0 8px}.muted{color:#9ca399;font:13px/1.5 Consolas,monospace}label{display:block;margin:24px 0 7px;font:11px Consolas,monospace;letter-spacing:.1em;text-transform:uppercase}input{width:100%;padding:12px;background:#101410;border:1px solid #454e45;color:#fff;font:16px Consolas,monospace}button{width:100%;margin-top:14px;padding:12px;border:0;background:#dda94f;color:#1c1b15;font:700 12px Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}#error{min-height:20px;color:#e88b6a;font:12px Consolas,monospace;margin:12px 0 0}.build{margin-top:22px;color:#697168;text-align:right;font:10px Consolas,monospace;letter-spacing:.04em}</style></head>
 <body><main class="panel"><div class="mark">Gary's garage · remote link</div><div class="rule"></div><h1>Car console</h1><div class="muted">Private vehicle bridge</div><form method="post" action="/login"><label for="password">Console password</label><input id="password" name="password" type="password" required autocomplete="current-password" autofocus><button type="submit">Open console</button><div id="error"></div></form></main><script>if(new URLSearchParams(location.search).has('invalid'))document.getElementById('error').textContent='Password not accepted.';</script></body></html>
 """;
 
@@ -99,7 +103,7 @@ app.Use(async (context, next) =>
         if (!string.Equals(origin, settings.PublicOrigin, StringComparison.OrdinalIgnoreCase))
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            await context.Response.WriteAsJsonAsync(new { error = "origin_rejected" });
+            await context.Response.WriteAsJsonAsync(new { error = "origin_rejected", expectedOrigin = settings.PublicOrigin, receivedOrigin = origin });
             return;
         }
     }
@@ -113,7 +117,7 @@ app.UseRateLimiter();
 
 app.MapGet("/healthz", () => Results.Text("ok")).AllowAnonymous();
 app.MapGet("/readyz", () => Results.Json(new { ready = true })).AllowAnonymous();
-app.MapGet("/login", () => Results.Content(loginHtml, "text/html; charset=utf-8")).AllowAnonymous();
+app.MapGet("/login", () => Results.Content(loginHtml.Replace("</form>", $"</form><div class=\"build\">Build {safeBuildId}</div>", StringComparison.Ordinal), "text/html; charset=utf-8")).AllowAnonymous();
 app.MapPost("/login", async (HttpContext context, AppOptions options) =>
 {
     if (!context.Request.HasFormContentType) return Results.BadRequest(new { error = "form_required" });

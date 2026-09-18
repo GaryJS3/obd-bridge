@@ -6,6 +6,8 @@ This dependency-light ASP.NET Core service serves the private car dashboard, aut
 
 Use the Git repository root as the Compose stack directory. The root `compose.yaml` builds `obd-bridge-web/Dockerfile`, exposes container port `8080`, and persists login cookie encryption keys in a named volume mounted at `/data`.
 
+The login page shows the assembly informational version. Docker builds set it to a UTC build timestamp by default; a `BUILD_ID` build argument can override it when a release or commit identifier is available.
+
 Set these environment variables as Dockhand secrets or configuration:
 
 | Variable | Required | Default / rule |
