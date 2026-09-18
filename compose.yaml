@@ -5,6 +5,9 @@ services:
       dockerfile: obd-bridge-web/Dockerfile
       args:
         BUILD_ID: "${BUILD_ID:-}"
+    # Dockhand's force-redeploy path runs `compose up` without `--build`.
+    # This prevents it from silently reusing a stale locally tagged image.
+    pull_policy: build
     restart: unless-stopped
     environment:
       ASPNETCORE_HTTP_PORTS: "8080"

@@ -8,6 +8,8 @@ Use the Git repository root as the Compose stack directory. The root `compose.ya
 
 The login page shows the assembly informational version. Docker builds set it to a UTC build timestamp by default; a `BUILD_ID` build argument can override it when a release or commit identifier is available.
 
+The service uses Compose `pull_policy: build` because Dockhand's force-redeploy operation may otherwise recreate the container from an existing local image without rebuilding changed source.
+
 Set these environment variables as Dockhand secrets or configuration:
 
 | Variable | Required | Default / rule |
